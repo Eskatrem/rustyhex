@@ -1,10 +1,11 @@
 extern mod sdl;
 
+use map::MapView;
+use core::rand::RngUtil;
+
 pub mod map;
 pub mod ui;
 
-use map::MapView;
-use core::rand::RngUtil;
 
 pub struct PlayerController {
 	ui : @mut ui::UI
