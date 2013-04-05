@@ -21,6 +21,7 @@ pub struct Position {
 	y : int
 }
 
+#[deriving(Eq)]
 pub enum RelativeDir {
 	FORWARD,
 	BACKWARD,
@@ -29,6 +30,7 @@ pub enum RelativeDir {
 }
 
 pub enum Action {
+	RUN(RelativeDir),
 	MOVE(RelativeDir),
 	TURN(RelativeDir),
 	MELEE(RelativeDir),
@@ -88,18 +90,20 @@ pub struct RelativeMap<'self> {
 pub impl Action {
 	fn pre_ticks(&self) -> uint {
 		match *self {
-			MOVE(BACKWARD) => 15u,
-			MOVE(_) => 10u,
+			MOVE(BACKWARD) | RUN(BACKWARD) => 15u,
+			RUN(FORWARD) => 5u,
+			MOVE(_)|RUN(_) => 10u,
 			TURN(_) => 5u,
-			MELEE(_) => 4u,
+			MELEE(_) => 2u,
 			WAIT => 1u
 		}
 	}
 	fn post_ticks(&self) -> uint {
 		match *self {
-			MOVE(_) => 10u,
+			RUN(FORWARD) => 5u,
+			MOVE(_)|RUN(_) => 10u,
 			TURN(_) => 5u,
-			MELEE(_) => 8u,
+			MELEE(_) => 10u,
 			WAIT => 0u
 		}
 	}
@@ -261,6 +265,7 @@ pub impl Creature {
 				Some(action) => {
 					redraw = true;
 					match (action) {
+						RUN(d) => self.move(d),
 						MOVE(d) => self.move(d),
 						TURN(d) => self.turn(d),
 						MELEE(d) => self.melee(d),

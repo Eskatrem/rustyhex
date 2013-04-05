@@ -276,7 +276,11 @@ pub impl UI {
 				Some(map::MELEE(d))
 			},
 			(Some(d), true, _) => {
-				Some(map::MOVE(d))
+				if (d == map::FORWARD) {
+					Some(map::RUN(d))
+				} else {
+					Some(map::MOVE(d))
+				}
 			},
 			(Some(d), false, _) => {
 				match (d) {

@@ -1,6 +1,7 @@
 Rustyhex is a work toward implementing a simple rouge-like game with hex tiles.
 
-It's written in Rust and it's primary purpose is to learn and practice Rust language.
+It's written in Rust and it's primary purpose is to learn and practice Rust
+language.
 
 #### Status
 
@@ -12,7 +13,8 @@ The game uses SDL library and [Rust SDL bindings][rust-sdl].
 
 [rust-sdl]: https://github.com/brson/rust-sdl
 
-Currently creatures are roaming around the map and attack anything right in front of them.
+Currently creatures are roaming around the map and attack anything right in
+front of them.
 
 #### Keyboard control
 
@@ -20,4 +22,5 @@ Move using Arrow Keys or `hjkl` keys (Vi-like).
 
 To wait a "tick" press `.` or `,`.
 
-Hold Left Shift to strafe, and hold Left Control to attack melee.
+Hold Left Shift to run (for forward) or strafe (for left and right). Hold Left
+Control to attack melee in given direction.
