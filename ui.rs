@@ -123,7 +123,7 @@ impl View {
 		View{ x_offset: x, y_offset: y }
 	}
 
-	fn draw(&self, screen: &video::Surface, pos : &map::Position, surface : &video::Surface) {
+	fn draw(&self, screen: &video::Surface, pos : map::Position, surface : &video::Surface) {
 		let mut drect = pos.to_rect();
 		drect.x += self.x_offset as i16;
 		drect.y += self.y_offset as i16;
@@ -139,7 +139,7 @@ impl View {
 	}
 
 	fn draw_sprite(&self, dsurf: &video::Surface, ssurf: &video::Surface,
-		pos : &map::Position, sprite : Sprite) {
+		pos : map::Position, sprite : Sprite) {
 		let mut drect = pos.to_rect();
 		let srect = sprite.to_rect();
 
@@ -202,11 +202,10 @@ impl UI {
 
 		self.screen.fill(video::RGB(0, 0, 0));
 
-		//let p = &*player;
 		let mut rm = map::RelativeMap::new(player.map, player.pos, player.dir);
 
-		do player.each_in_view_rect() | pos : &map::Position | {
-			let tpos = &rm.translate(pos);
+		do player.each_in_view_rect() | pos : map::Position | {
+			let tpos = rm.translate(pos);
 			let base = rm.base();
 			if player.knows(tpos) {
 				let t = base.at(tpos);
@@ -233,7 +232,7 @@ impl UI {
 		}
 
 		if (player.alive()) {
-			self.view.draw_sprite(self.screen, self.tiles, &map::Position {x:0, y:0}, Sprite::human());
+			self.view.draw_sprite(self.screen, self.tiles, map::Position {x:0, y:0}, Sprite::human());
 		}
 
 		self.screen.flip();

@@ -2,7 +2,7 @@ RUSTC ?= rustc
 
 #LOG_FLAGS ?= RUST_LOG=rustc::metadata::creader
 RUST_ENV = "--cfg image"
-RUSTC_FLAGS = "-L../rust-sdl/"
+RUSTC_FLAGS = -L../rust-sdl/
 all: rustyhex
 
 run: all

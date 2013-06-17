@@ -73,9 +73,9 @@ pub struct Map {
 }
 
 pub trait MapView {
-	fn at(&mut self, pos: &Position) -> Tile;
-	fn creature_at(&mut self, pos: &Position) -> Option<@mut Creature>;
-	fn translate(&self, pos : &Position) -> Position;
+	fn at(&mut self, pos: Position) -> Tile;
+	fn creature_at(&mut self, pos: Position) -> Option<@mut Creature>;
+	fn translate(&self, pos : Position) -> Position;
 }
 
 /**
@@ -184,17 +184,17 @@ impl Sub<Position, Position> for Position {
 }
 
 impl Position {
-	pub fn relative_to(&self, pos : &Position) -> ~Position {
+	pub fn relative_to(&self, pos : Position) -> ~Position {
 		~Position{ x: self.x - pos.x, y: self.y - pos.y}
 	}
 
 	// Iterate over every neighbor
-	pub fn each_around(&self, up : int, down : int, left : int, right : int, f : &fn(position : &Position)) {
+	pub fn each_around(&self, up : int, down : int, left : int, right : int, f : &fn(position : Position)) {
 		for range(self.y - up, self.y + down + 1) |vy| {
 			for range(self.x - left, self.x + right + 1) |vx| {
 				let x = vx;
 				let y = vy + ((vx - self.x) >> 1);
-				f (&Position {x: x, y: y});
+				f (Position {x: x, y: y});
 			}
 		}
 	}
@@ -236,7 +236,7 @@ static PLAYER_VIEW: int = 10;
 
 impl Creature {
 	pub fn new<T: MoveController + 'static>(
-			map : @mut Map, position : &Position, direction : Direction,
+			map : @mut Map, position : Position, direction : Direction,
 			ctr : @T
 			) -> Creature {
 		Creature {
@@ -244,7 +244,7 @@ impl Creature {
 			last_hit_time: 1000,
 			life: 3,
 			controller: ctr as @MoveController,
-			pos : *position, dir : direction,
+			pos : position, dir : direction,
 			action: None, pre_action_ticks: 0, post_action_ticks: 0,
 			map_visible: vec::from_elem(map.width, vec::from_elem(map.height, false)),
 			map_known: vec::from_elem(map.width, vec::from_elem(map.height, false)),
@@ -296,9 +296,9 @@ impl Creature {
 		let d = self.dir.turn_m(rd); // workaround bug
 		let pos = self.pos; // workaround bug
 		let new_position = pos.neighbor(d);
-		self.mark_known(&new_position);
-		if (self.map.at(&new_position).is_passable()) {
-			self.map.move_creature(self, &new_position);
+		self.mark_known(new_position);
+		if (self.map.at(new_position).is_passable()) {
+			self.map.move_creature(self, new_position);
 		}
 	}
 
@@ -306,7 +306,7 @@ impl Creature {
 		let pos = self.pos; // workaround bug
 		let dir = self.dir;
 		let new_position = pos.neighbor(dir.turn(rd));
-		match self.map.creature_at(&new_position) {
+		match self.map.creature_at(new_position) {
 			Some(cr) => {
 				cr.hit();
 			},
@@ -331,25 +331,25 @@ impl Creature {
 		self.life > 0
 	}
 
-	pub fn mark_visible(&mut self, pos : &Position) {
+	pub fn mark_visible(&mut self, pos : Position) {
 		let p = self.map.wrap_position(pos);
 
 		self.map_visible[p.x][p.y] = true;
 	}
 
-	pub fn mark_known(&mut self, pos : &Position) {
+	pub fn mark_known(&mut self, pos : Position) {
 		let p = self.map.wrap_position(pos);
 
 		self.map_known[p.x][p.y] = true;
 	}
 
-	pub fn sees(&self, pos: &Position) -> bool {
+	pub fn sees(&self, pos: Position) -> bool {
 		let p = self.map.wrap_position(pos);
 
 		self.map_visible[p.x][p.y]
 	}
 
-	pub fn knows(&self, pos: &Position) -> bool {
+	pub fn knows(&self, pos: Position) -> bool {
 		let p = self.map.wrap_position(pos);
 
 		self.map_known[p.x][p.y]
@@ -360,12 +360,12 @@ impl Creature {
 	}
 
 	// Iterate over a rectangle in front of the Creature
-	pub fn each_in_view_rect(&self, f : &fn(position : &Position)) {
+	pub fn each_in_view_rect(&self, f : &fn(position : Position)) {
 		Position{x:0,y:0}.each_around(PLAYER_VIEW, 2, PLAYER_VIEW, PLAYER_VIEW, f)
 	}
 
 	// Very hacky, recursive LoS algorithm
-	fn do_view(&mut self, pos: &Position,
+	fn do_view(&mut self, pos: Position,
 		main_dir : Direction, dir : Option<Direction>, pdir : Option<Direction>, depth: uint) {
 		if (depth == 0) {
 			return;
@@ -399,10 +399,10 @@ impl Creature {
 				let n = pos.neighbor(d);
 				match dir {
 					Some(_) => {
-						self.do_view(&n, d, Some(d), dir, depth - 1);
+						self.do_view(n, d, Some(d), dir, depth - 1);
 					},
 					None => {
-						self.do_view(&n, main_dir, Some(d), dir, depth - 1);
+						self.do_view(n, main_dir, Some(d), dir, depth - 1);
 					}
 				};
 			}
@@ -415,7 +415,7 @@ impl Creature {
 		let position = copy self.pos;
 		let direction = copy self.dir;
 
-		self.do_view(&position, direction, None, None, PLAYER_VIEW as uint);
+		self.do_view(position, direction, None, None, PLAYER_VIEW as uint);
 	}
 }
 
@@ -450,26 +450,26 @@ impl Tile {
 }
 
 impl MapView for Map {
-	pub fn at(&mut self, pos: &Position) -> Tile {
+	pub fn at(&mut self, pos: Position) -> Tile {
 		let p = self.wrap_position(pos);
 		self.tiles[p.x][p.y]
 	}
-	pub fn creature_at(&mut self, pos: &Position) -> Option<@mut Creature> {
+	pub fn creature_at(&mut self, pos: Position) -> Option<@mut Creature> {
 		let p = self.wrap_position(pos);
 		self.creatures[p.x][p.y]
 	}
-	pub fn translate(&self, pos : &Position) -> Position {
-		*pos
+	pub fn translate(&self, pos : Position) -> Position {
+		pos
 	}
 }
 
-fn each_in_vrect<T: MapView>(s: &mut T, cp : &Position, rx : int, ry : int, f : &fn(position : Position, t: Tile)) {
+fn each_in_vrect<T: MapView>(s: &mut T, cp : Position, rx : int, ry : int, f : &fn(position : Position, t: Tile)) {
 	for range(-rx, rx + 1) |vx| {
 		for range(-ry, ry + 1) |vy| {
 			let x = cp.x + vx;
 			let y = cp.y + vy + (vx >> 1);
 			let p = Position {x: x as int, y: y as int};
-			f(p, s.at(&p));
+			f(p, s.at(p));
 		}
 	}
 }
@@ -500,7 +500,7 @@ impl Map {
 		}
 	}
 
-	fn wrap_position(&self, pos : &Position) -> Position {
+	fn wrap_position(&self, pos : Position) -> Position {
 		Position {
 			x: modulo(pos.x, self.width as int),
 			y: modulo(pos.y, self.height as int)
@@ -526,7 +526,7 @@ impl Map {
 		}
 	}
 
-	fn spawn_creature<T:MoveController + 'static>(@mut self, pos : &Position, dir : Direction,
+	fn spawn_creature<T:MoveController + 'static>(@mut self, pos : Position, dir : Direction,
 			controller : @T
 			) -> Option<@mut Creature> {
 		if (!self.at(pos).is_passable()) {
@@ -546,7 +546,7 @@ impl Map {
 			@mut self, controller : @T
 			) -> @mut Creature {
 		let mut rng = rand::rng();
-		let pos = &Position{
+		let pos = Position{
 			x: rng.gen_int_range(0, self.width as int),
 			y: rng.gen_int_range(0, self.height as int)
 		};
@@ -559,7 +559,7 @@ impl Map {
 		}
 	}
 
-	fn move_creature(&mut self, cr : @mut Creature, pos : &Position) {
+	fn move_creature(&mut self, cr : @mut Creature, pos : Position) {
 		let pos = &self.wrap_position(pos);
 		match (self.creatures[pos.x][pos.y]) {
 			Some(_) => {},
@@ -573,7 +573,7 @@ impl Map {
 
 	fn remove_creature(&mut self, cr : @mut Creature) {
 		let pos = cr.pos;
-		let pos = self.wrap_position(&pos);
+		let pos = self.wrap_position(pos);
 		self.creatures[pos.x][pos.y] = None;
 	}
 }
@@ -592,15 +592,15 @@ impl<'self> RelativeMap<'self> {
 impl<'self> MapView for RelativeMap<'self> {
 	fn at(&mut self, pos: Position) -> Tile {
 		let pos = self.translate(pos);
-		self.map.at(&pos)
+		self.map.at(pos)
 	}
 
-	fn creature_at(&mut self, pos: &Position) -> Option<@mut Creature> {
+	fn creature_at(&mut self, pos: Position) -> Option<@mut Creature> {
 		let pos = self.translate(pos);
-		self.map.creature_at(&pos)
+		self.map.creature_at(pos)
 	}
 
-	fn translate(&self, pos : &Position) -> Position {
+	fn translate(&self, pos : Position) -> Position {
 		match self.dir {
 			N => Position {
 				x: self.pos.x + pos.x,

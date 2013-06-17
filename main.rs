@@ -25,14 +25,14 @@ impl map::MoveController for MonsterController {
 	fn get_move(&mut self, cr : @mut map::Creature) -> map::Action {
 		let mut rng = rand::rng();
 
-		for [map::FORWARD, map::LEFT, map::RIGHT].each |dir| {
+		for [map::FORWARD, map::LEFT, map::RIGHT].each |&dir| {
 			let pos = cr.pos;
 			let cd = cr.dir;
-			let pos = pos.neighbor(cd.turn(*dir));
-			match cr.map.creature_at(&pos) {
+			let pos = pos.neighbor(cd.turn(dir));
+			match cr.map.creature_at(pos) {
 				None => {}
 				Some(_) => {
-					return map::MELEE(*dir);
+					return map::MELEE(dir);
 				}
 			}
 		};
@@ -44,7 +44,7 @@ impl map::MoveController for MonsterController {
 				let cd = cr.dir;
 				let pos = cr.pos;
 				let front = pos.neighbor(cd);
-				let in_front = cr.map.at(&front);
+				let in_front = cr.map.at(front);
 				if in_front.is_passable() {
 					map::MOVE(map::FORWARD)
 				} else {
