@@ -1,4 +1,4 @@
-use core::str;
+use std::result;
 
 use sdl;
 use sdl::video;
@@ -11,7 +11,7 @@ use map::MapView;
 
 /* replace with something more Rusty
  * in the future */
-use core::libc::{c_int};
+use std::libc::{c_int};
 pub extern {
 	fn usleep(n : c_int) -> c_int;
 }
@@ -108,7 +108,7 @@ impl Sprite {
 }
 
 fn load_or_die(file : ~str) -> ~video::Surface {
-	match img::load(&Path(str::concat(&[~"data/", copy file, ~".png"]))) {
+	match img::load(&Path([~"data/", copy file, ~".png"].concat())) {
 		result::Ok(image) => {
 			image
 		},
@@ -118,7 +118,7 @@ fn load_or_die(file : ~str) -> ~video::Surface {
 	}
 }
 
-pub impl View {
+impl View {
 	fn new(x : int, y : int) -> View {
 		View{ x_offset: x, y_offset: y }
 	}
@@ -141,7 +141,7 @@ pub impl View {
 	fn draw_sprite(&self, dsurf: &video::Surface, ssurf: &video::Surface,
 		pos : &map::Position, sprite : Sprite) {
 		let mut drect = pos.to_rect();
-		let mut srect = sprite.to_rect();
+		let srect = sprite.to_rect();
 
 		drect.x += self.x_offset as i16;
 		drect.y += self.y_offset as i16;
@@ -154,8 +154,8 @@ pub impl View {
 	}
 }
 
-pub impl UI {
-	fn new() -> UI {
+impl UI {
+	pub fn new() -> UI {
 		sdl::init(&[sdl::InitEverything]);
 		img::init([img::InitPNG]);
 
@@ -187,11 +187,11 @@ pub impl UI {
 		}
 	}
 
-	fn set_player(&mut self, p : @mut map::Creature) {
+	pub fn set_player(&mut self, p : @mut map::Creature) {
 		self.player = Some(p);
 	}
 
-	fn update(&mut self) {
+	pub fn update(&mut self) {
 
 		let player = match self.player {
 			Some(p) => p,
@@ -202,12 +202,12 @@ pub impl UI {
 
 		self.screen.fill(video::RGB(0, 0, 0));
 
-		let p = &*player;
-		let mut rm = map::RelativeMap::new(p.map, &p.pos, p.dir);
+		//let p = &*player;
+		let mut rm = map::RelativeMap::new(player.map, player.pos, player.dir);
 
 		do player.each_in_view_rect() | pos : &map::Position | {
 			let tpos = &rm.translate(pos);
-			let mut base = rm.base();
+			let base = rm.base();
 			if player.knows(tpos) {
 				let t = base.at(tpos);
 				let sprite = Sprite::for_tile(t, player.sees(tpos));
@@ -243,7 +243,7 @@ pub impl UI {
 		}
 	}
 
-	fn keyevent_to_action(&mut self, key : &event::Key, m : &[event::Mod] ) -> Option<map::Action> {
+	pub fn keyevent_to_action(&mut self, key : &event::Key, m : &[event::Mod] ) -> Option<map::Action> {
 		let attack = m.contains(&event::LCtrlMod);
 		let strafe = m.contains(&event::LShiftMod);
 		let dir = match *key {
@@ -296,7 +296,7 @@ pub impl UI {
 		}
 	}
 
-	fn check_exit_input(&mut self) {
+	pub fn check_exit_input(&mut self) {
 		match event::poll_event() {
 			event::KeyEvent(key, true , _, _) => {
 				match (key) {
@@ -310,7 +310,7 @@ pub impl UI {
 		}
 	}
 
-	fn get_input(&mut self) -> map::Action {
+	pub fn get_input(&mut self) -> map::Action {
 		loop {
 			match event::wait_event() {
 				event::KeyEvent(key, true , m, _) => {

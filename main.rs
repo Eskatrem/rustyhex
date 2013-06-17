@@ -1,7 +1,9 @@
 extern mod sdl;
 
 use map::MapView;
-use core::rand::RngUtil;
+use std::rand::RngUtil;
+use std::vec;
+use std::rand;
 
 pub mod map;
 pub mod ui;
@@ -21,7 +23,7 @@ impl MonsterController {
 
 impl map::MoveController for MonsterController {
 	fn get_move(&mut self, cr : @mut map::Creature) -> map::Action {
-		let rng = rand::Rng();
+		let mut rng = rand::rng();
 
 		for [map::FORWARD, map::LEFT, map::RIGHT].each |dir| {
 			let pos = cr.pos;
@@ -67,7 +69,7 @@ impl map::MoveController for PlayerController {
 
 
 fn sdl_main() {
-	let mut ui = @mut ui::UI::new();
+	let ui = @mut ui::UI::new();
 
 	let map = @mut map::Map::new();
 
