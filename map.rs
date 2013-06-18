@@ -81,8 +81,8 @@ pub trait MapView {
 /**
  * View of the map with rotation (dir) and offset (pos)
  */
-pub struct RelativeMap<'self> {
-	map : &'self mut Map,
+pub struct RelativeMap {
+	map : @mut Map,
 	pos : Position,
 	dir : Direction
 }
@@ -578,18 +578,18 @@ impl Map {
 	}
 }
 
-impl<'self> RelativeMap<'self> {
-	pub fn new(map: &'self mut Map, pos : Position, dir : Direction) -> RelativeMap<'self> {
+impl RelativeMap {
+	pub fn new(map: @mut Map, pos : Position, dir : Direction) -> RelativeMap {
 		RelativeMap{ map: map, pos: pos, dir: dir }
 	}
 
 	// Underlying map.
-	pub fn base(&mut self) -> &'self mut Map {
-		&mut *self.map
+	pub fn base(&mut self) -> @mut Map {
+		self.map
 	}
 }
 
-impl<'self> MapView for RelativeMap<'self> {
+impl MapView for RelativeMap {
 	fn at(&mut self, pos: Position) -> Tile {
 		let pos = self.translate(pos);
 		self.map.at(pos)
