@@ -25,7 +25,9 @@ impl map::MoveController for MonsterController {
 	fn get_move(&mut self, cr : @mut map::Creature) -> map::Action {
 		let mut rng = rand::rng();
 
-		for [map::FORWARD, map::LEFT, map::RIGHT].each |&dir| {
+		let dirs = [map::FORWARD, map::LEFT, map::RIGHT];
+
+		for dirs.iter().advance |&dir| {
 			let pos = cr.pos;
 			let cd = cr.dir;
 			let pos = pos.neighbor(cd.turn(dir));
@@ -87,7 +89,7 @@ fn sdl_main() {
 	ui.update();
 
 	loop {
-		for creatures.each |creature| {
+		for creatures.iter().advance |creature| {
 			if (!creature.alive()) {
 				loop;
 			}

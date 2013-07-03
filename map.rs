@@ -395,7 +395,7 @@ impl Creature {
 		};
 
 		if self.map.at(pos).can_see_through() {
-			for neighbors.each |&d| {
+			for neighbors.iter().advance |&d| {
 				let n = pos.neighbor(d);
 				match dir {
 					Some(_) => {
