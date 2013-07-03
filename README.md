@@ -5,9 +5,9 @@ language.
 
 #### Status
 
-ATM (2013-02-17 02:32 CET) the game looks something like this:
+ATM (2013-07-03) the game looks something like this:
 
-![Rustyhex screenshot](http://i.imgur.com/C1EzHzU.png)
+![Rustyhex screenshot](http://i.imgur.com/f1W54wV.png)
 
 The game uses SDL library and [Rust SDL bindings][rust-sdl].
 
@@ -24,3 +24,6 @@ To wait a "tick" press `.` or `,`.
 
 Hold Left Shift to run (for forward) or strafe (for left and right). Hold Left
 Control to attack melee in given direction.
+
+Current challenge is: survive and try killing as much enemies as possible. Tip:
+use running to get behind them and strike fast.
