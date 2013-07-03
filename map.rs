@@ -34,6 +34,7 @@ pub enum Action {
 	MOVE(RelativeDir),
 	TURN(RelativeDir),
 	MELEE(RelativeDir),
+	USE,
 	WAIT
 }
 
@@ -65,9 +66,18 @@ pub enum Tile {
 static MAP_WIDTH : uint = 32;
 static MAP_HEIGHT : uint = 32;
 
+pub enum ObjectType {
+	MEDKIT
+}
+
+pub struct Object {
+	objecttype : ObjectType
+}
+
 pub struct Map {
 	tiles : ~[ ~[ Tile ] ],
 	creatures : ~[ ~[ Option<@mut Creature> ] ],
+	objects : ~[ ~[ @mut ~[ ~Object ] ] ],
 	width : uint,
 	height : uint
 }
@@ -75,6 +85,7 @@ pub struct Map {
 pub trait MapView {
 	fn at(&mut self, pos: Position) -> Tile;
 	fn creature_at(&mut self, pos: Position) -> Option<@mut Creature>;
+	fn objects_at(&mut self, pos: Position) -> @mut ~[ ~Object ];
 	fn translate(&self, pos : Position) -> Position;
 }
 
@@ -88,23 +99,37 @@ pub struct RelativeMap {
 }
 
 impl Action {
-	fn pre_ticks(&self) -> uint {
+	fn pre_ticks(&self, cr: @mut Creature) -> uint {
 		match *self {
 			MOVE(BACKWARD) | RUN(BACKWARD) => 15u,
 			RUN(FORWARD) => 5u,
 			MOVE(_)|RUN(_) => 10u,
 			TURN(_) => 5u,
 			MELEE(_) => 2u,
-			WAIT => 1u
+			WAIT => 1u,
+			USE => {
+				if (cr.map.objects_at(cr.pos).len() != 0) {
+					30u
+				} else {
+					0u
+				}
+			}
 		}
 	}
-	fn post_ticks(&self) -> uint {
+	fn post_ticks(&self, cr : @mut Creature) -> uint {
 		match *self {
 			RUN(FORWARD) => 5u,
 			MOVE(_)|RUN(_) => 10u,
 			TURN(_) => 5u,
 			MELEE(_) => 10u,
-			WAIT => 0u
+			WAIT => 0u,
+			USE => {
+				if (cr.map.objects_at(cr.pos).len() != 0) {
+					30u
+				} else {
+					0u
+				}
+			}
 		}
 	}
 }
@@ -269,7 +294,8 @@ impl Creature {
 						MOVE(d) => self.move(d),
 						TURN(d) => self.turn(d),
 						MELEE(d) => self.melee(d),
-						WAIT => {}
+						USE => self.use_item(),
+						WAIT => {},
 					}
 					self.action = None
 				}
@@ -279,8 +305,8 @@ impl Creature {
 					} else {
 						let action = self.controller.get_move(self);
 						self.action = Some(action);
-						self.pre_action_ticks = action.pre_ticks();
-						self.post_action_ticks = action.post_ticks();
+						self.pre_action_ticks = action.pre_ticks(self);
+						self.post_action_ticks = action.post_ticks(self);
 					}
 				}
 			}
@@ -302,6 +328,19 @@ impl Creature {
 		}
 	}
 
+	pub fn use_item(@mut self) {
+		let objs = self.map.objects_at(self.pos);
+
+		if objs.len() == 0 {
+			return;
+		}
+		match objs.last().objecttype {
+			MEDKIT => {
+				self.life = self.life + 1;
+				objs.pop();
+			}
+		}
+	}
 	pub fn melee(@mut self, rd : RelativeDir) {
 		let pos = self.pos; // workaround bug
 		let dir = self.dir;
@@ -455,8 +494,12 @@ impl MapView for Map {
 		self.tiles[p.x][p.y]
 	}
 	pub fn creature_at(&mut self, pos: Position) -> Option<@mut Creature> {
-		let p = self.wrap_position(pos);
-		self.creatures[p.x][p.y]
+		let pos = self.wrap_position(pos);
+		self.creatures[pos.x][pos.y]
+	}
+	pub fn objects_at(&mut self, pos: Position) -> @mut ~[ ~Object ] {
+		let pos = self.wrap_position(pos);
+		self.objects[pos.x][pos.y]
 	}
 	pub fn translate(&self, pos : Position) -> Position {
 		pos
@@ -494,9 +537,15 @@ impl Map {
 			})
 		});
 
+		let objects = vec::from_fn(MAP_WIDTH, |_| {
+			vec::from_fn(MAP_HEIGHT, |_| {
+				@mut ~[]
+			})
+		});
 		Map {
 			tiles: map, creatures: creatures,
-			width: MAP_WIDTH, height: MAP_HEIGHT
+			width: MAP_WIDTH, height: MAP_HEIGHT,
+			objects: objects
 		}
 	}
 
@@ -542,14 +591,30 @@ impl Map {
 		}
 	}
 
+	pub fn spawn_object(@mut self, pos : Position, obj : ~Object) {
+		if (!self.at(pos).is_passable()) {
+			return;
+		}
+		self.objects[pos.x][pos.y].push(obj);
+		//vec::append_one(self.objects[pos.x][pos.y], obj);
+	}
+
+	pub fn random_pos(&self) -> Position {
+		let mut rng = rand::rng();
+
+		Position {
+			x: rng.gen_int_range(0, self.width as int),
+			y: rng.gen_int_range(0, self.height as int)
+		}
+	}
+
 	pub fn spawn_random_creature<T:MoveController + 'static>(
 			@mut self, controller : @T
 			) -> @mut Creature {
+
 		let mut rng = rand::rng();
-		let pos = Position{
-			x: rng.gen_int_range(0, self.width as int),
-			y: rng.gen_int_range(0, self.height as int)
-		};
+
+		let pos = self.random_pos();
 
 		let dir = N.turn_by_int(rng.gen_int_range(0, 6));
 
@@ -600,6 +665,10 @@ impl MapView for RelativeMap {
 		self.map.creature_at(pos)
 	}
 
+	pub fn objects_at(&mut self, pos: Position) -> @mut ~[ ~Object ] {
+		let pos = self.translate(pos);
+		self.map.objects[pos.x][pos.y]
+	}
 	fn translate(&self, pos : Position) -> Position {
 		match self.dir {
 			N => Position {

@@ -7,7 +7,7 @@ language.
 
 ATM (2013-07-03) the game looks something like this:
 
-![Rustyhex screenshot](http://i.imgur.com/f1W54wV.png)
+![Rustyhex screenshot](http://i.imgur.com/CHIrUNb.png)
 
 The game uses SDL library and [Rust SDL bindings][rust-sdl].
 
@@ -21,6 +21,9 @@ front of them.
 Move using Arrow Keys or `hjkl` keys (Vi-like).
 
 To wait a "tick" press `.` or `,`.
+
+Use `u` to use item on the ground. Note: it takes quite a bit of time.
+Currently only medkits are implemented.
 
 Hold Left Shift to run (for forward) or strafe (for left and right). Hold Left
 Control to attack melee in given direction.

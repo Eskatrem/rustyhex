@@ -75,12 +75,14 @@ fn sdl_main() {
 
 	let map = @mut map::Map::new();
 
-
 	let mut creatures = vec::from_fn(30, |_| {
 			map.spawn_random_creature(@MonsterController::new())
 		}
 	);
 
+	for 20.times {
+		map.spawn_object(map.random_pos(), ~map::Object { objecttype: map::MEDKIT} )
+	}
 	let player = map.spawn_random_creature(@PlayerController::new(ui));
 	creatures.push(player);
 

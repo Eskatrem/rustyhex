@@ -89,6 +89,12 @@ impl Sprite {
 	fn for_creature(dir : map::Direction) -> Sprite {
 		Sprite{ x: dir.to_uint(), y: 3 }
 	}
+
+	fn for_object(obj : &map::Object) -> Sprite {
+		match obj.objecttype {
+			map::MEDKIT => Sprite{ x: 2, y: 0 }
+		}
+	}
 	fn for_hit() -> Sprite {
 		Sprite{ x: 0, y: 0 }
 	}
@@ -213,6 +219,11 @@ impl UI {
 				self.view.draw_sprite(self.screen, self.tiles, pos, sprite);
 
 				if player.sees(tpos) {
+					let objs = base.objects_at(tpos);
+					for objs.iter().advance |&obj| {
+						self.view.draw_sprite(self.screen, self.tiles, pos, Sprite::for_object(obj));
+					}
+
 					match base.creature_at(tpos) {
 						Some(creature) => {
 							if (creature.last_hit_time < 8) {
@@ -267,6 +278,9 @@ impl UI {
 			},
 			event::PeriodKey | event::CommaKey => {
 				return Some(map::WAIT);
+			},
+			event::UKey => {
+				return Some(map::USE)
 			},
 			_ => {}
 		};
