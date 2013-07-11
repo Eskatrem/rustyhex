@@ -33,8 +33,10 @@ impl map::MoveController for MonsterController {
 			let pos = pos.neighbor(cd.turn(dir));
 			match cr.map.creature_at(pos) {
 				None => {}
-				Some(_) => {
-					return map::MELEE(dir);
+				Some(c) => {
+					if (c.is_player()) {
+						return map::MELEE(dir);
+					}
 				}
 			}
 		};
@@ -69,21 +71,20 @@ impl map::MoveController for PlayerController {
 	}
 }
 
-
 fn sdl_main() {
 	let ui = @mut ui::UI::new();
 
 	let map = @mut map::Map::new();
 
 	let mut creatures = vec::from_fn(30, |_| {
-					 map.spawn_random_creature(@MonsterController::new())
+					 map.spawn_random_creature(@MonsterController::new(), false)
 					 }
 					);
 
 	for 20.times {
 		map.spawn_object(map.random_pos(), ~map::Medkit::new() as ~map::Object )
 	}
-	let player = map.spawn_random_creature(@PlayerController::new(ui));
+	let player = map.spawn_random_creature(@PlayerController::new(ui), true);
 	creatures.push(player);
 
 	player.update_visibility();

@@ -55,7 +55,8 @@ pub struct Creature {
 	map_visible : ~[ ~[ bool ] ],
 	map_known : ~[ ~[ bool ] ],
 	map_height: uint,
-	map_width: uint
+	map_width: uint,
+	player: bool
 }
 
 pub enum Tile {
@@ -276,7 +277,7 @@ static PLAYER_VIEW: int = 10;
 impl Creature {
 	pub fn new<T: MoveController + 'static>(
 			map : @mut Map, position : Position, direction : Direction,
-			ctr : @T
+			ctr : @T, player : bool
 			) -> Creature {
 		Creature {
 			map: map,
@@ -289,7 +290,12 @@ impl Creature {
 			map_known: vec::from_elem(map.width, vec::from_elem(map.height, false)),
 			map_width: map.width,
 			map_height: map.height,
+			player: player
 		}
+	}
+
+	pub fn is_player(&self) -> bool {
+		self.player
 	}
 
 	pub fn tick(@mut self) -> bool {
@@ -590,7 +596,7 @@ impl Map {
 	}
 
 	fn spawn_creature<T:MoveController + 'static>(@mut self, pos : Position, dir : Direction,
-			controller : @T
+			controller : @T, player : bool
 			) -> Option<@mut Creature> {
 		if (!self.at(pos).is_passable()) {
 			return None;
@@ -598,7 +604,7 @@ impl Map {
 		match (self.creatures[pos.x][pos.y]) {
 			Some(_) => None,
 			None => {
-				let c = @mut Creature::new(self, pos, dir, controller);
+				let c = @mut Creature::new(self, pos, dir, controller, player);
 				self.creatures[pos.x][pos.y] = Some(c);
 				Some(c)
 			}
@@ -622,7 +628,7 @@ impl Map {
 	}
 
 	pub fn spawn_random_creature<T:MoveController + 'static>(
-			@mut self, controller : @T
+			@mut self, controller : @T, player : bool
 			) -> @mut Creature {
 
 		let mut rng = rand::rng();
@@ -631,8 +637,8 @@ impl Map {
 
 		let dir = N.turn_by_int(rng.gen_int_range(0, 6));
 
-		match (self.spawn_creature(pos, dir, controller)) {
-			None => self.spawn_random_creature(controller),
+		match (self.spawn_creature(pos, dir, controller, player)) {
+			None => self.spawn_random_creature(controller, player),
 			Some(creature) => creature
 		}
 	}
