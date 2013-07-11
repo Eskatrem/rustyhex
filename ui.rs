@@ -90,8 +90,8 @@ impl Sprite {
 		Sprite{ x: dir.to_uint(), y: 3 }
 	}
 
-	fn for_object(obj : &map::Object) -> Sprite {
-		match obj.objecttype {
+	fn for_object(obj : ~map::Object) -> Sprite {
+		match obj.get_type() {
 			map::MEDKIT => Sprite{ x: 2, y: 0 }
 		}
 	}

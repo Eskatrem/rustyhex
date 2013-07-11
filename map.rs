@@ -70,8 +70,22 @@ pub enum ObjectType {
 	MEDKIT
 }
 
-pub struct Object {
-	objecttype : ObjectType
+pub trait Object {
+	fn get_type(&self) -> ObjectType;
+}
+
+pub struct Medkit;
+
+impl Medkit {
+	pub fn new() -> Medkit {
+		Medkit
+	}
+}
+
+impl Object for Medkit {
+	pub fn get_type(&self) -> ObjectType {
+		MEDKIT
+	}
 }
 
 pub struct Map {
@@ -334,7 +348,7 @@ impl Creature {
 		if objs.len() == 0 {
 			return;
 		}
-		match objs.last().objecttype {
+		match objs.last().get_type() {
 			MEDKIT => {
 				self.life = self.life + 1;
 				objs.pop();
@@ -596,7 +610,6 @@ impl Map {
 			return;
 		}
 		self.objects[pos.x][pos.y].push(obj);
-		//vec::append_one(self.objects[pos.x][pos.y], obj);
 	}
 
 	pub fn random_pos(&self) -> Position {
