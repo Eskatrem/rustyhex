@@ -386,7 +386,7 @@ impl Creature {
 		self.map.remove_creature(self);
 	}
 
-	pub fn alive(&mut self) -> bool {
+	pub fn alive(&self) -> bool {
 		self.life > 0
 	}
 

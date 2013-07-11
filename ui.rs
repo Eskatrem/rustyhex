@@ -213,12 +213,12 @@ impl UI {
 		do player.each_in_view_rect() | pos : map::Position | {
 			let tpos = rm.translate(pos);
 			let base = rm.base();
-			if player.knows(tpos) {
+			if !player.alive() || player.knows(tpos) {
 				let t = base.at(tpos);
-				let sprite = Sprite::for_tile(t, player.sees(tpos));
+				let sprite = Sprite::for_tile(t, !player.alive() || player.sees(tpos));
 				self.view.draw_sprite(self.screen, self.tiles, pos, sprite);
 
-				if player.sees(tpos) {
+				if !player.alive() || player.sees(tpos) {
 					let objs = base.objects_at(tpos);
 					for objs.iter().advance |&obj| {
 						self.view.draw_sprite(self.screen, self.tiles, pos, Sprite::for_object(obj));
