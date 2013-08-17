@@ -1,4 +1,3 @@
-use std::int::*;
 use std::cast;
 use std::rand;
 use std::rand::RngUtil;
@@ -48,7 +47,7 @@ pub struct Creature {
 	dir : Direction,
 	last_hit_time : int,
 	life : int,
-	controller : @MoveController,
+	controller : @mut MoveController,
 	action : Option<Action>,
 	pre_action_ticks : uint,
 	post_action_ticks : uint,
@@ -84,7 +83,7 @@ impl Medkit {
 }
 
 impl Object for Medkit {
-	pub fn get_type(&self) -> ObjectType {
+	fn get_type(&self) -> ObjectType {
 		MEDKIT
 	}
 }
@@ -116,10 +115,10 @@ pub struct RelativeMap {
 impl Action {
 	fn pre_ticks(&self, cr: @mut Creature) -> uint {
 		match *self {
-			MOVE(BACKWARD) | RUN(BACKWARD) => 15u,
-			RUN(FORWARD) => 5u,
-			MOVE(_)|RUN(_) => 10u,
-			TURN(_) => 5u,
+			MOVE(BACKWARD) | RUN(BACKWARD) => 24u,
+			RUN(FORWARD) => 8u,
+			MOVE(_)|RUN(_) => 20u,
+			TURN(_) => 6u,
 			MELEE(_) => 2u,
 			WAIT => 1u,
 			USE => {
@@ -133,9 +132,9 @@ impl Action {
 	}
 	fn post_ticks(&self, cr : @mut Creature) -> uint {
 		match *self {
-			RUN(FORWARD) => 5u,
-			MOVE(_)|RUN(_) => 10u,
-			TURN(_) => 5u,
+			RUN(FORWARD) => 2u,
+			MOVE(_)|RUN(_) => 4u,
+			TURN(_) => 4u,
 			MELEE(_) => 10u,
 			WAIT => 0u,
 			USE => {
@@ -150,7 +149,7 @@ impl Action {
 }
 
 impl RelativeDir {
-	fn to_int(&self) -> int {
+	pub fn to_int(&self) -> int {
 		match *self {
 			FORWARD => 0,
 			BACKWARD => 3,
@@ -161,7 +160,7 @@ impl RelativeDir {
 }
 
 impl Direction {
-	fn turn_mut(&mut self, rd : RelativeDir) {
+	pub fn turn_mut(&mut self, rd : RelativeDir) {
 		let i = rd.to_int();
 		unsafe {
 			*self = cast::transmute_copy(&modulo((*self as int + i), 6))
@@ -175,26 +174,26 @@ impl Direction {
 			cast::transmute_copy(&modulo((*self as int + i), 6))
 		}
 	}
-	fn turn(&self, rd : RelativeDir) -> Direction {
+	pub fn turn(&self, rd : RelativeDir) -> Direction {
 		let i = rd.to_int();
 		unsafe {
 			cast::transmute_copy(&modulo((*self as int + i), 6))
 		}
 	}
 
-	fn turn_by_int(&self, i : int) -> Direction {
+	pub fn turn_by_int(&self, i : int) -> Direction {
 		unsafe {
 			cast::transmute_copy(&modulo((*self as int + i), 6))
 		}
 	}
 
-	fn relative_to(&self, dir : Direction) -> Direction {
+	pub fn relative_to(&self, dir : Direction) -> Direction {
 		unsafe {
 			cast::transmute_copy(&modulo(((*self as int)  - (dir as int)), 6))
 		}
 	}
 
-	fn to_uint(&self) -> uint {
+	pub fn to_uint(&self) -> uint {
 		unsafe {
 			cast::transmute_copy(&(*self as int))
 		}
@@ -230,8 +229,8 @@ impl Position {
 
 	// Iterate over every neighbor
 	pub fn each_around(&self, up : int, down : int, left : int, right : int, f : &fn(position : Position)) {
-		for range(self.y - up, self.y + down + 1) |vy| {
-			for range(self.x - left, self.x + right + 1) |vx| {
+		for vy in range(self.y - up, self.y + down + 1) {
+			for vx in range(self.x - left, self.x + right + 1) {
 				let x = vx;
 				let y = vy + ((vx - self.x) >> 1);
 				f (Position {x: x, y: y});
@@ -277,13 +276,13 @@ static PLAYER_VIEW: int = 10;
 impl Creature {
 	pub fn new<T: MoveController + 'static>(
 			map : @mut Map, position : Position, direction : Direction,
-			ctr : @T, player : bool
+			ctr : @mut T, player : bool
 			) -> Creature {
 		Creature {
 			map: map,
 			last_hit_time: 1000,
 			life: 3,
-			controller: ctr as @MoveController,
+			controller: ctr as @mut MoveController,
 			pos : position, dir : direction,
 			action: None, pre_action_ticks: 0, post_action_ticks: 0,
 			map_visible: vec::from_elem(map.width, vec::from_elem(map.height, false)),
@@ -454,7 +453,7 @@ impl Creature {
 		};
 
 		if self.map.at(pos).can_see_through() {
-			for neighbors.iter().advance |&d| {
+			for &d in neighbors.iter() {
 				let n = pos.neighbor(d);
 				match dir {
 					Some(_) => {
@@ -471,8 +470,8 @@ impl Creature {
 	pub fn update_visibility(&mut self) {
 		self.map_visible = vec::from_elem(self.map.width, vec::from_elem(self.map.height, false));
 
-		let position = copy self.pos;
-		let direction = copy self.dir;
+		let position = self.pos;
+		let direction = self.dir;
 
 		self.do_view(position, direction, None, None, PLAYER_VIEW as uint);
 	}
@@ -509,26 +508,26 @@ impl Tile {
 }
 
 impl MapView for Map {
-	pub fn at(&mut self, pos: Position) -> Tile {
+	fn at(&mut self, pos: Position) -> Tile {
 		let p = self.wrap_position(pos);
 		self.tiles[p.x][p.y]
 	}
-	pub fn creature_at(&mut self, pos: Position) -> Option<@mut Creature> {
+	fn creature_at(&mut self, pos: Position) -> Option<@mut Creature> {
 		let pos = self.wrap_position(pos);
 		self.creatures[pos.x][pos.y]
 	}
-	pub fn objects_at(&mut self, pos: Position) -> @mut ~[ ~Object ] {
+	fn objects_at(&mut self, pos: Position) -> @mut ~[ ~Object ] {
 		let pos = self.wrap_position(pos);
 		self.objects[pos.x][pos.y]
 	}
-	pub fn translate(&self, pos : Position) -> Position {
+	fn translate(&self, pos : Position) -> Position {
 		pos
 	}
 }
 
 fn each_in_vrect<T: MapView>(s: &mut T, cp : Position, rx : int, ry : int, f : &fn(position : Position, t: Tile)) {
-	for range(-rx, rx + 1) |vx| {
-		for range(-ry, ry + 1) |vy| {
+	for vx in range(-rx, rx + 1) {
+		for vy in range(-ry, ry + 1) {
 			let x = cp.x + vx;
 			let y = cp.y + vy + (vx >> 1);
 			let p = Position {x: x as int, y: y as int};
@@ -577,16 +576,16 @@ impl Map {
 	}
 
 	fn for_each_tile(&mut self, f : &fn(Position, &mut Tile)) {
-		for range(0, self.width as int) |x| {
-			for range(0, self.height as int) |y| {
+		for x in range(0, self.width as int) {
+			for y in range(0, self.height as int) {
 				f(Position {x: x as int, y: y as int}, &mut self.tiles[x][y]);
 			}
 		}
 	}
 
 	fn for_each_creature(&mut self, f : &fn(@mut Creature)) {
-		for range(0, self.width as int) |x| {
-			for range(0, self.height as int) |y| {
+		for x in range(0, self.width as int) {
+			for y in range(0, self.height as int) {
 				match (self.creatures[x][y]) {
 					Some(creature) => f(creature),
 					None => {}
@@ -596,7 +595,7 @@ impl Map {
 	}
 
 	fn spawn_creature<T:MoveController + 'static>(@mut self, pos : Position, dir : Direction,
-			controller : @T, player : bool
+			controller : @mut T, player : bool
 			) -> Option<@mut Creature> {
 		if (!self.at(pos).is_passable()) {
 			return None;
@@ -628,7 +627,7 @@ impl Map {
 	}
 
 	pub fn spawn_random_creature<T:MoveController + 'static>(
-			@mut self, controller : @T, player : bool
+			@mut self, controller : @mut T, player : bool
 			) -> @mut Creature {
 
 		let mut rng = rand::rng();
@@ -684,7 +683,7 @@ impl MapView for RelativeMap {
 		self.map.creature_at(pos)
 	}
 
-	pub fn objects_at(&mut self, pos: Position) -> @mut ~[ ~Object ] {
+	fn objects_at(&mut self, pos: Position) -> @mut ~[ ~Object ] {
 		let pos = self.translate(pos);
 		self.map.objects[pos.x][pos.y]
 	}

@@ -12,7 +12,7 @@ use map::MapView;
 /* replace with something more Rusty
  * in the future */
 use std::libc::{c_int};
-pub extern {
+extern {
 	fn usleep(n : c_int) -> c_int;
 }
 
@@ -90,7 +90,7 @@ impl Sprite {
 		Sprite{ x: dir.to_uint(), y: 3 }
 	}
 
-	fn for_object(obj : ~map::Object) -> Sprite {
+	fn for_object(obj : &map::Object) -> Sprite {
 		match obj.get_type() {
 			map::MEDKIT => Sprite{ x: 2, y: 0 }
 		}
@@ -114,7 +114,7 @@ impl Sprite {
 }
 
 fn load_or_die(file : ~str) -> ~video::Surface {
-	match img::load(&Path([~"data/", copy file, ~".png"].concat())) {
+	match img::load(&Path([~"data/", file, ~".png"].concat())) {
 		result::Ok(image) => {
 			image
 		},
@@ -220,8 +220,9 @@ impl UI {
 
 				if !player.alive() || player.sees(tpos) {
 					let objs = base.objects_at(tpos);
-					for objs.iter().advance |&obj| {
-						self.view.draw_sprite(self.screen, self.tiles, pos, Sprite::for_object(obj));
+					for obj in objs.iter() {
+						let sprite = Sprite::for_object(*obj);
+						self.view.draw_sprite(self.screen, self.tiles, pos, sprite);
 					}
 
 					match base.creature_at(tpos) {
