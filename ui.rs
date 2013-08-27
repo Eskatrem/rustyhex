@@ -196,7 +196,9 @@ impl UI {
 	pub fn set_player(&mut self, p : @mut map::Creature) {
 		self.player = Some(p);
 	}
-
+    
+    #[fixed_stack_segment]
+    #[inline(never)]
 	pub fn update(&mut self) {
 
 		let player = match self.player {
